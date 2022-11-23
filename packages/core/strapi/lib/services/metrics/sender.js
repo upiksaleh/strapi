@@ -30,13 +30,12 @@ const addPackageJsonStrapiMetadata = (metadata, strapi) => {
 };
 
 /**
- * Create a send function for event with all the necessary metadatas
- * @param {Object} strapi strapi app
- * @returns {Function} (event, payload) -> Promise{boolean}
+ * Aggregate and returns all anonymous telemetry to send with telemetry events
+ * NOTE: strapi.EE and ee.isEE are only available after load
+ * @param {Object} strapi
+ * @returns {Object} anonymous metadata
  */
-module.exports = (strapi) => {
-  const { uuid } = strapi.config;
-  const deviceId = machineID();
+const getAnonymousMetadata = (strapi) => {
   const isEE = strapi.EE === true && ee.isEE === true;
 
   const serverRootPath = strapi.dirs.app.root;
@@ -60,6 +59,18 @@ module.exports = (strapi) => {
 
   addPackageJsonStrapiMetadata(anonymousMetadata, strapi);
 
+  return anonymousMetadata;
+};
+
+/**
+ * Create a send function for event with all the necessary metadatas
+ * @param {Object} strapi strapi app
+ * @returns {Function} (event, payload) -> Promise{boolean}
+ */
+module.exports = (strapi) => {
+  const { uuid } = strapi.config;
+  const deviceId = machineID();
+
   return async (event, payload = {}, opts = {}) => {
     const reqParams = {
       method: 'POST',
@@ -69,7 +80,7 @@ module.exports = (strapi) => {
         deviceId,
         properties: stringifyDeep({
           ...payload,
-          ...anonymousMetadata,
+          ...getAnonymousMetadata(strapi),
         }),
       }),
       ..._.merge({}, defaultQueryOpts, opts),
