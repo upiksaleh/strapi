@@ -362,6 +362,8 @@ class Strapi {
   }
 
   async register() {
+    await this.loadEE();
+
     await Promise.all([
       this.loadApp(),
       this.loadSanitizers(),
@@ -452,6 +454,8 @@ class Strapi {
       value: strapi.contentTypes,
     });
 
+    await ee.checkLicense();
+
     await this.startWebhooks();
 
     await this.server.initMiddlewares();
@@ -477,7 +481,6 @@ class Strapi {
   }
 
   async load() {
-    await this.loadEE();
     await this.register();
     await this.bootstrap();
 
