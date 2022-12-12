@@ -5,13 +5,20 @@
 // FIXME
 /* eslint-disable import/extensions */
 const _ = require('lodash');
+const path = require('path');
 const resolveCwd = require('resolve-cwd');
 const { yellow } = require('chalk');
-const { Command } = require('commander');
+const { Command, Option } = require('commander');
+const inquirer = require('inquirer');
 
 const program = new Command();
 
 const packageJSON = require('../package.json');
+const {
+  parseInputList,
+  promptEncryptionKey,
+  confirmKeyValue,
+} = require('../lib/commands/utils/commander');
 
 const checkCwdIsStrapiApp = (name) => {
   const logErrorAndExit = () => {
@@ -254,5 +261,95 @@ program
   .option('--verbose', `Display more information about the types generation`, false)
   .option('-s, --silent', `Run the generation silently, without any output`, false)
   .action(getLocalScript('ts/generate-types'));
+
+// `$ strapi export`
+program
+  .command('export')
+  .description('Export data from Strapi to file')
+  .addOption(
+    new Option('--no-encrypt', `Disable 'aes-128-ecb' encryption of the output file`).default(true)
+  )
+  .addOption(new Option('--no-compress', 'Disable gzip compression of output file').default(true))
+  .addOption(
+    new Option('--key <string>', 'Provide encryption key in command instead of using a prompt')
+  )
+  .addOption(
+    new Option(
+      '--max-size-jsonl <max MB per internal backup file>',
+      'split internal jsonl files when exceeding max size in MB'
+    )
+      .argParser(parseFloat)
+      .default(256)
+  )
+  .addOption(new Option('-f, --file <file>', 'name to use for exported file (without extensions)'))
+  .allowExcessArguments(false)
+  .hook('preAction', promptEncryptionKey)
+  // validate inputs
+  .hook('preAction', (thisCommand) => {
+    const opts = thisCommand.opts();
+    if (!opts.maxSizeJsonl) {
+      console.error('Invalid max-size-jsonl provided. Must be a number value.');
+      process.exit(1);
+    }
+  })
+  .action(getLocalScript('transfer/export'));
+
+// `$ strapi import`
+program
+  .command('import')
+  .description('Import data from file to Strapi')
+  .addOption(
+    new Option('--conflictStrategy <conflictStrategy>', 'Which strategy to use for ID conflicts')
+      .choices(['restore', 'abort', 'keep', 'replace'])
+      .default('restore')
+  )
+  .addOption(
+    new Option(
+      '--schemaComparison <schemaComparison>',
+      'exact requires every field to match, strict requires Strapi version and content type schema fields do not break, subset requires source schema to exist in destination, bypass skips checks',
+      parseInputList
+    )
+      .choices(['exact', 'strict', 'subset', 'bypass'])
+      .default('exact')
+  )
+  .requiredOption(
+    '-f, --file <file>',
+    'path and filename to the Strapi export file you want to import'
+  )
+  .addOption(
+    new Option('-k, --key <string>', 'Provide encryption key in command instead of using a prompt')
+  )
+  .allowExcessArguments(false)
+  .hook('preAction', async (thisCommand) => {
+    const opts = thisCommand.opts();
+    const ext = path.extname(String(opts.file));
+
+    // check extension to guess if we should prompt for key
+    if (ext === '.enc') {
+      if (!opts.key) {
+        const answers = await inquirer.prompt([
+          {
+            type: 'password',
+            message: 'Please enter your decryption key',
+            name: 'key',
+          },
+        ]);
+        if (!answers.key?.length) {
+          console.log('No key entered, aborting import.');
+          process.exit(0);
+        }
+        opts.key = answers.key;
+      }
+    }
+  })
+  .hook(
+    'preAction',
+    confirmKeyValue(
+      'conflictStrategy',
+      'restore',
+      "Using strategy 'restore' will delete all data in your database. Are you sure you want to proceed?"
+    )
+  )
+  .action(getLocalScript('transfer/import'));
 
 program.parseAsync(process.argv);
