@@ -158,6 +158,7 @@ export interface Database {
   migrations: MigrationProvider;
   entityManager: EntityManager;
   queryBuilder: any;
+  transaction: any;
 
   query<T extends keyof AllTypes>(uid: T): QueryFromContentType<T>;
 }
