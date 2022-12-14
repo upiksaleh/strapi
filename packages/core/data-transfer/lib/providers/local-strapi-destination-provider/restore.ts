@@ -36,6 +36,8 @@ export const deleteAllRecords = async (strapi: Strapi.Strapi, deleteOptions?: De
 };
 
 const restoreCoreStore = async (strapi: Strapi.Strapi, data: any) => {
+  delete data.id;
+  console.log(data);
   return strapi.db.query('strapi::core-store').create({
     data: {
       ...data,
@@ -45,6 +47,7 @@ const restoreCoreStore = async (strapi: Strapi.Strapi, data: any) => {
 };
 
 const restoreWebhooks = async (strapi: Strapi.Strapi, data: any) => {
+  delete data.id;
   return strapi.db.query('webhook').create({
     data,
   });

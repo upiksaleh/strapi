@@ -28,6 +28,8 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
 
   strapi?: Strapi.Strapi;
 
+  trx?: any;
+
   constructor(options: ILocalStrapiDestinationProviderOptions) {
     this.options = options;
   }
@@ -38,6 +40,7 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
   }
 
   async close(): Promise<void> {
+    await this.trx.commit();
     await this.strapi?.destroy?.();
   }
 
@@ -55,8 +58,16 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
   }
 
   async beforeTransfer() {
-    if (this.options.strategy === 'restore') {
-      await this.#deleteAll();
+    if (!this.strapi) {
+      throw new Error('Strapi instance not found');
+    }
+    this.trx = await this.strapi.db.transaction();
+    try {
+      if (this.options.strategy === 'restore') {
+        await this.#deleteAll();
+      }
+    } catch (error) {
+      await this.trx.rollback();
     }
   }
 
@@ -106,11 +117,13 @@ class LocalStrapiDestinationProvider implements IDestinationProvider {
           }
           callback();
         } catch (error) {
+          await this.trx.rollback();
+          console.log(error);
           callback(
             new Error(
               `Failed to import ${chalk.yellowBright(config.type)} (${chalk.greenBright(
                 config.value.id
-              )}`
+              )})`
             )
           );
         }
