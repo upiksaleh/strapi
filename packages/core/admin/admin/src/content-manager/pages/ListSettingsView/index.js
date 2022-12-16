@@ -114,10 +114,10 @@ const ListSettingsView = ({ layout, slug }) => {
   };
 
   const handleCloseModal = () => {
+    toggleModalForm();
     dispatch({
       type: 'UNSET_FIELD_TO_EDIT',
     });
-    toggleModalForm();
   };
 
   const handleSubmitFieldEdit = (e) => {
