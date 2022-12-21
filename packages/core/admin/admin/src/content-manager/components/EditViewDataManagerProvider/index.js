@@ -252,7 +252,7 @@ const EditViewDataManagerProvider = ({
   /**
    * @type {({ name: string, value: Relation, toOneRelation: boolean}) => void}
    */
-  const connectRelation = useCallback(({ name, value, toOneRelation }) => {
+  const relationConnect = useCallback(({ name, value, toOneRelation }) => {
     dispatch({
       type: 'CONNECT_RELATION',
       keys: name.split('.'),
@@ -261,7 +261,7 @@ const EditViewDataManagerProvider = ({
     });
   }, []);
 
-  const loadRelation = useCallback(({ target: { name, value } }) => {
+  const relationLoad = useCallback(({ target: { name, value } }) => {
     dispatch({
       type: 'LOAD_RELATION',
       keys: name.split('.'),
@@ -534,20 +534,39 @@ const EditViewDataManagerProvider = ({
     [shouldCheckDZErrors]
   );
 
-  const moveComponentField = useCallback((pathToComponent, dragIndex, hoverIndex) => {
+  const moveComponentField = useCallback(({ name, newIndex, currentIndex }) => {
     dispatch({
       type: 'MOVE_COMPONENT_FIELD',
-      pathToComponent,
-      dragIndex,
-      hoverIndex,
+      keys: name.split('.'),
+      newIndex,
+      oldIndex: currentIndex,
     });
   }, []);
 
-  const disconnectRelation = useCallback(({ name, id }) => {
+  const relationDisconnect = useCallback(({ name, id }) => {
     dispatch({
       type: 'DISCONNECT_RELATION',
       keys: name.split('.'),
       id,
+    });
+  }, []);
+
+  /**
+   * @typedef Payload
+   * @type {object}
+   * @property {string} name - The name of the field in `modifiedData`
+   * @property {number} oldIndex - The relation's current index
+   * @property {number} newIndex - The relation's new index
+   *
+   *
+   * @type {(payload: Payload) => void}
+   */
+  const relationReorder = useCallback(({ name, oldIndex, newIndex }) => {
+    dispatch({
+      type: 'REORDER_RELATION',
+      keys: name.split('.'),
+      oldIndex,
+      newIndex,
     });
   }, []);
 
@@ -601,7 +620,6 @@ const EditViewDataManagerProvider = ({
       value={{
         addComponentToDynamicZone,
         addNonRepeatableComponentToField,
-        connectRelation,
         addRepeatableComponentToField,
         allLayoutData,
         checkFormErrors,
@@ -614,20 +632,28 @@ const EditViewDataManagerProvider = ({
         shouldNotRunValidations,
         status,
         layout: currentContentTypeLayout,
-        loadRelation,
         modifiedData,
-        moveComponentDown,
         moveComponentField,
+        /**
+         * @deprecated use `moveComponentField` instead. This will be removed in v5.
+         */
+        moveComponentDown,
+        /**
+         * @deprecated use `moveComponentField` instead. This will be removed in v5.
+         */
         moveComponentUp,
         onChange: handleChange,
         onPublish: handlePublish,
         onUnpublish,
-        disconnectRelation,
         readActionAllowedFields,
         redirectToPreviousPage,
         removeComponentFromDynamicZone,
         removeComponentFromField,
         removeRepeatableField,
+        relationConnect,
+        relationDisconnect,
+        relationLoad,
+        relationReorder,
         slug,
         triggerFormValidation,
         updateActionAllowedFields,

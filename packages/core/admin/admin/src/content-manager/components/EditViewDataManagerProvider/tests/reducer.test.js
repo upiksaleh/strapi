@@ -697,7 +697,7 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
         },
         modifiedData: {
           name: 'name',
-          dz: [{ name: 'test', __component: 'blog.simple' }],
+          dz: [{ name: 'test', __component: 'blog.simple', __temp_key__: 0 }],
         },
         modifiedDZName: 'dz',
       };
@@ -745,11 +745,11 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
         },
         initialData: {
           name: 'name',
-          dz: [{ name: 'test', __component: 'blog.simple' }],
+          dz: [{ name: 'test', __component: 'blog.simple', id: 0 }],
         },
         modifiedData: {
           name: 'name',
-          dz: [{ name: 'test', __component: 'blog.simple' }],
+          dz: [{ name: 'test', __component: 'blog.simple', id: 0 }],
         },
       };
 
@@ -760,13 +760,13 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
         },
         initialData: {
           name: 'name',
-          dz: [{ name: 'test', __component: 'blog.simple' }],
+          dz: [{ name: 'test', __component: 'blog.simple', id: 0 }],
         },
         modifiedData: {
           name: 'name',
           dz: [
-            { name: 'test', __component: 'blog.simple' },
-            { name: 'test', __component: 'blog.simple' },
+            { name: 'test', __component: 'blog.simple', id: 0 },
+            { name: 'test', __component: 'blog.simple', __temp_key__: 1 },
           ],
         },
         modifiedDZName: 'dz',
@@ -826,7 +826,7 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
         },
         modifiedData: {
           name: 'name',
-          dz: [{ relation: [], __component: 'blog.relation' }],
+          dz: [{ relation: [], __component: 'blog.relation', __temp_key__: 0 }],
         },
         modifiedDZName: 'dz',
       };
@@ -1800,9 +1800,9 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
 
       const action = {
         type: 'MOVE_COMPONENT_FIELD',
-        dragIndex: 3,
-        hoverIndex: 1,
-        pathToComponent: ['test', 'component_field'],
+        newIndex: 1,
+        oldIndex: 3,
+        keys: ['test', 'component_field'],
       };
 
       const expected = {
@@ -2207,6 +2207,53 @@ describe('CONTENT MANAGER | COMPONENTS | EditViewDataManagerProvider | reducer',
           },
         },
         shouldCheckErrors: true,
+      };
+
+      expect(reducer(state, action)).toEqual(expected);
+    });
+  });
+
+  describe('REORDER_RELATION', () => {
+    it('should move a component correctly', () => {
+      const state = {
+        ...initialState,
+        modifiedData: {
+          name: 'name',
+          field1: {
+            field2: {
+              relation: [
+                { name: 'first' },
+                { name: 'second' },
+                { name: 'third' },
+                { name: 'fourth' },
+              ],
+            },
+          },
+        },
+      };
+
+      const action = {
+        type: 'REORDER_RELATION',
+        newIndex: 1,
+        oldIndex: 3,
+        keys: ['field1', 'field2', 'relation'],
+      };
+
+      const expected = {
+        ...initialState,
+        modifiedData: {
+          name: 'name',
+          field1: {
+            field2: {
+              relation: [
+                { name: 'first' },
+                { name: 'fourth' },
+                { name: 'second' },
+                { name: 'third' },
+              ],
+            },
+          },
+        },
       };
 
       expect(reducer(state, action)).toEqual(expected);
